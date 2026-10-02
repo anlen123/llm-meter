@@ -846,3 +846,31 @@ python3 llm_meter.py --db ./usage-backup.sqlite3 dashboard --no-sync
 ### 可以查看 agent 的子任务或按 agent 筛选吗
 
 网页已支持独立 agent 维度；本地日志自动区分 pi、omp、codex，代理通过 --agent 显式标记，远端记录需可信的专用 key 映射。子 agent 维度仍未实现；没有依据的归属保留为未知。
+
+
+## 编辑已保存站点、DeepSeek 与 Codex 实时额度
+
+保存配置后可随时修改：在「数据连接」的站点余额卡片点击 **编辑配置**，或点击 **管理站点 → 编辑**。修改名称、地址、余额路径、Provider、别名、币种或密钥后点击 **保存修改**；立即生效，无需重启。密钥留空保留原值，输入新密钥替换；不会回显已保存密钥。OpenRouter 官方地址和 USD 固定，其他字段可编辑。
+
+### DeepSeek 官方账户
+
+1. 「管理站点 → 新增」，查询类型选择 **DeepSeek · 官方余额接口**。
+2. 名称填 DeepSeek，Provider ID 填 `deepseek`；自动填入 Base URL `https://api.deepseek.com` 和余额路径 `/user/balance`。
+3. 填写 DeepSeek API key，币种建议 **跟随接口**，点击 **保存并查余额**。
+4. 卡片显示可用余额、赠金和充值余额，支持接口返回的 CNY / USD；选择固定币种会选择对应币种账户，缺失时提示错误，不换汇或重标金额。
+
+余额协议见 [DeepSeek 官方文档](https://api-docs.deepseek.com/zh-cn/api/get-user-balance/)。余额接口不能提供完整调用历史；agent、模型、token 用量仍通过 pi/omp 本地日志、专用 OpenAI 兼容代理或数据导入接入。代理 upstream 可设置为 `https://api.deepseek.com`，Provider 设置 `deepseek`，agent 填实际调用客户端。
+
+### Codex 随时查看剩余额度
+
+「数据连接 → Codex 剩余额度 / credits → 查询实时额度」调用服务器上 `codex app-server` 的只读 `account/rateLimits/read`，显示各窗口剩余比例、重置时间、查询时间及接口提供的 credits。不会启动推理任务。普通页面自动刷新读取已保存快照；需要新的账户额度时再次点击查询。日志快照与实时查询均明确标注来源和时间，失败保留上次快照。
+
+先在运行此工具的机器安装 Codex CLI，并用 ChatGPT 账户执行 `codex login`。自定义登录目录可用：
+
+```sh
+python3 llm_meter.py web --codex-home /path/to/codex-home
+```
+
+额度不是美元账户余额。仅 API key / 中转站登录不保证支持此额度接口，请在站点卡片查询供应商金额余额。credits 按接口原值显示，不推断币种。服务商未返回 credits 时不会虚构金额。部署在另一台机器时，额度属于该机器的 Codex 登录账号；导入用量 JSONL 不会同步登录状态或实时额度。不需要在网页粘贴 Codex 登录 token。
+
+接口说明见 [OpenAI 官方 app-server 文档](https://learn.chatgpt.com/docs/app-server)。演示模式不连接真实服务。

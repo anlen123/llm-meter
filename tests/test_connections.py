@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from llm_meter_connections import Connections,balance_url,extract_balance
+from llm_meter_connections import Connections,balance_url,extract_balance,extract_deepseek_balance
 
 
 class ConnectionTests(unittest.TestCase):
@@ -55,6 +55,20 @@ class ConnectionTests(unittest.TestCase):
         loaded=Connections(self.path)
         with patch('llm_meter_connections.get_json',return_value={'balance':7,'unit':'CNY'}):
             self.assertEqual(loaded.query(ident)['unit'],'CNY')
+    def test_deepseek_native_currency_and_edit(self):
+        raw={'is_available':False,'balance_infos':[{'currency':'CNY','total_balance':'0','granted_balance':'0','topped_up_balance':'0'}, {'currency':'USD','total_balance':'8.5','granted_balance':'1','topped_up_balance':'7.5'}]}
+        self.assertEqual(extract_deepseek_balance(raw)['remaining'],0)
+        self.assertFalse(extract_deepseek_balance(raw)['isValid'])
+        self.assertEqual(extract_deepseek_balance(raw,'USD')['remaining'],8.5)
+        with self.assertRaises(ValueError):extract_deepseek_balance({'balance_infos':raw['balance_infos'][:1]},'USD')
+        ident=self.sites.save({'name':'DeepSeek','provider':'deepseek','type':'deepseek','base_url':'https://api.deepseek.com','api_key':'old'})
+        self.sites.save({'id':ident,'name':'Updated','provider':'deepseek','type':'deepseek','base_url':'https://api.deepseek.com/v1','api_key':'new','currency':'USD'})
+        with patch('llm_meter_connections.get_json',return_value=raw) as fetch:
+            self.assertEqual(self.sites.query(ident)['remaining'],8.5)
+            fetch.assert_called_once_with('https://api.deepseek.com/user/balance','new')
+        self.assertEqual(len(self.sites.public()),1)
+        self.assertEqual(self.sites.public()[0]['name'],'Updated')
+
     def test_openrouter_currency_is_usd(self):
         ident=self.sites.save({'name':'Router','provider':'openrouter','type':'openrouter','api_key':'key'})
         self.assertEqual(self.sites.get(ident)['currency'],'USD')

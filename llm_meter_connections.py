@@ -55,6 +55,20 @@ def extract_balance(response,currency="auto"):
             'isValid':bool(valid),'scope':'接口返回余额'}
 
 
+def extract_deepseek_balance(response, currency="auto"):
+    if not isinstance(response, dict):raise ValueError('DeepSeek 余额响应格式无效')
+    rows=response.get('balance_infos')
+    if not isinstance(rows,list) or not rows:raise ValueError('DeepSeek 未返回账户余额')
+    if currency not in ('auto','USD','CNY'):raise ValueError('DeepSeek 币种无效')
+    selected=next((r for r in rows if isinstance(r,dict) and (currency=='auto' or r.get('currency')==currency)),None)
+    if selected is None:raise ValueError('DeepSeek 未返回所选币种余额；请选择跟随接口')
+    result=extract_balance({'remaining':selected.get('total_balance'),'unit':selected.get('currency'),
+                            'is_active':response.get('is_available',True)})
+    result.update(scope='DeepSeek 账户余额（含赠金和充值）',balances=rows,
+                  granted_balance=selected.get('granted_balance'),topped_up_balance=selected.get('topped_up_balance'))
+    return result
+
+
 class Connections:
     def __init__(self,path):
         self.path=Path(path)
@@ -106,10 +120,10 @@ class Connections:
             provider=str(data.get('provider') or '').strip()
             kind=data.get('type','generic')
             if not name or len(name)>80 or not provider or len(provider)>80:raise ValueError('请填写站点名称和 Provider ID（最多 80 字符）')
-            if kind not in ('generic','openrouter'):raise ValueError('无效的查询类型')
+            if kind not in ('generic','openrouter','deepseek'):raise ValueError('无效的查询类型')
             base='https://openrouter.ai/api/v1' if kind=='openrouter' else normalize_base(data.get('base_url'))
-            path=data.get('balance_path') or '/v1/usage'
-            if kind=='generic':balance_url(base,path)
+            path=data.get('balance_path') or ('/user/balance' if kind=='deepseek' else '/v1/usage')
+            if kind in ('generic','deepseek'):balance_url(base,path)
             currency=data.get('currency',old.get('currency','auto'))
             if currency not in ('auto','USD','CNY'):raise ValueError('币种必须是跟随接口、USD 或 CNY')
             if kind=='openrouter':
@@ -129,7 +143,7 @@ class Connections:
                     raise ValueError('凭证格式无效')
                 # Blank edit means keep stored value; explicit checkbox clears it.
                 row[key]='' if data.get('clear_'+key) else (value.strip() if value and value.strip() else old.get(key,''))
-            if kind=='generic' and not row['api_key']:raise ValueError('请填写 API key')
+            if kind in ('generic','deepseek') and not row['api_key']:raise ValueError('请填写 API key')
             if kind=='openrouter' and not row['api_key'] and not row['management_key']:raise ValueError('请填写普通 key 或管理 key')
             before=self.items
             self.items=[x for x in self.items if x['id']!=ident]+[row]
@@ -150,6 +164,8 @@ class Connections:
         try:
             if item['type']=='generic':
                 balance=extract_balance(get_json(balance_url(item['base_url'],item['balance_path']),item['api_key']),item.get('currency','auto'))
+            elif item['type']=='deepseek':
+                balance=extract_deepseek_balance(get_json(balance_url(item['base_url'],item['balance_path']),item['api_key']),item.get('currency','auto'))
             else:
                 balance={'remaining':None,'unit':'USD','isValid':True,'scope':'账户余额需管理 key'}
                 if item.get('api_key'):

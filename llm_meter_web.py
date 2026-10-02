@@ -14,6 +14,7 @@ import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from llm_meter_codex import read_codex_limits
 from llm_meter_connections import Connections
 from llm_meter import Store, sync_codex, sync_pi_family, sync_openrouter
 
@@ -272,6 +273,14 @@ def run_web(args):
                         try:warnings=sync_openrouter(store,item.get('api_key'),item.get('management_key'),namespace=item['id'])
                         finally:store.close()
                     self.send(200,{'message':'OpenRouter 历史已同步','warnings':warnings})
+                elif self.path=='/api/codex/limits':
+                    if args.demo:raise ValueError('演示模式不查询真实 Codex 额度')
+                    with lock:
+                        result=read_codex_limits(args.codex_home)
+                        store=Store(db_path)
+                        try:store.snapshot('codex:live',result);store.db.commit()
+                        finally:store.close()
+                    self.send(200,{'message':'Codex 实时额度已更新'})
                 elif self.path=='/api/sync':
                     sync_local(True)
                     self.send(200,{'message':'本地会话已同步','warnings':state['warnings']})

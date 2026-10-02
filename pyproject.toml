@@ -13,7 +13,7 @@ dependencies = []
 llm-meter = "llm_meter:cli"
 
 [tool.setuptools]
-py-modules = ["llm_meter", "llm_meter_web", "llm_meter_connections"]
+py-modules = ["llm_meter", "llm_meter_web", "llm_meter_connections", "llm_meter_codex"]
 packages = ["meter_static"]
 
 [tool.setuptools.package-data]
