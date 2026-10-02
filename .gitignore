@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+*.sqlite3*
+*.db*
+*.egg-info/
+build/
+dist/
+
+.env
+*.env
+providers.json
+
+*.connections.json

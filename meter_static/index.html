@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light"><title>LLM Meter · 用量观察台</title>
+<link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<aside class="sidebar">
+  <a href="/" class="brand"><span class="brand-symbol">m<span>↗</span></span><span>meter<span class="brand-sub">LLM OBSERVATORY</span></span></a>
+  <div class="nav-label">工作空间</div>
+  <a class="nav-link active" href="#overview"><span>◫</span> 用量总览 <span class="nav-dot"></span></a>
+  <a class="nav-link" href="#breakdown"><span>◉</span> 维度分析</a>
+  <a class="nav-link" href="#records"><span>≡</span> 调用记录</a>
+  <a class="nav-link" href="#connections"><span>⇄</span> 数据连接</a>
+  <div class="sidebar-note"><span class="little-dot"></span> 本地数据优先<p>每一次调用，都有迹可循。</p><div class="agent-pills"><span>pi</span><span>omp</span><span>codex</span></div></div>
+  <div class="sidebar-foot">LLM METER <span>v0.4</span></div>
+</aside>
+<main>
+<header class="topbar"><div><span class="crumb">工作空间</span><span class="crumb-slash">/</span>用量总览</div><div class="topbar-right"><span id="modeBadge" class="badge">本地看板</span><span class="local-status"><i></i> 127.0.0.1</span></div></header>
+<div class="page" id="overview">
+  <div class="page-heading"><div><div class="eyebrow">YOUR AI, IN PERSPECTIVE</div><h1>用量观察台<span class="heading-dot">.</span></h1><p>让 agent、模型与每一笔消耗，一目了然。</p></div><div class="heading-actions"><button id="exportBtn" class="button secondary">↓ 导出 CSV</button><button id="syncBtn" class="button primary">↻ 同步本地</button></div></div>
+  <div id="feedback" class="feedback" role="status" hidden></div>
+  <section class="filter-panel" aria-label="统计筛选">
+    <div class="filter-top"><span class="section-label">筛选视图</span><div class="date-controls"><div class="range-buttons" id="rangeButtons"><button data-days="7">7 天</button><button class="selected" data-days="14">14 天</button><button data-days="30">30 天</button></div><input type="date" id="startDate" aria-label="开始日期"><span class="date-dash">—</span><input type="date" id="endDate" aria-label="结束日期"></div></div>
+    <div class="filter-grid">
+      <label>采集数据集<select id="dataset"><option value="local">本地会话 · 推荐</option><option value="proxy">代理采集</option><option value="remote">远端历史</option><option value="import">导入记录</option><option value="demo">演示数据</option><option value="all">全部 · 可能重复</option></select></label>
+      <label>Agent<select id="agent"><option value="">全部 agent</option></select></label>
+      <label>中转站 / Provider<select id="provider"><option value="">全部中转站</option></select></label>
+      <label>模型<select id="model"><option value="">全部模型</option></select></label>
+      <label>记录来源<select id="source"><option value="">全部记录来源</option></select></label>
+      <button class="reset-button" id="resetBtn" aria-label="重置筛选">重置 ↺</button>
+    </div>
+    <div class="filter-footer"><span id="scopeNote">统计本机 pi、omp 与 Codex 会话；金额估算与服务商费用分开。</span><label class="auto-refresh"><input type="checkbox" id="autoRefresh" checked> 每 15 秒刷新</label></div>
+  </section>
+  <section class="stat-grid" aria-label="统计摘要">
+    <article class="stat-card"><div class="stat-head">总 Token<span class="stat-icon teal">↗</span></div><div class="stat-value" id="totalTokens">—</div><div class="stat-detail" id="tokenDetail">输入 — · 输出 —</div><div class="mini-bar"><i id="inputRatio"></i></div></article>
+    <article class="stat-card"><div class="stat-head">调用量<span class="stat-icon blue">⌘</span></div><div class="stat-value" id="totalRequests">—</div><div class="stat-detail" id="requestDetail">用量事件与已采集请求</div><div class="stat-foot">按当前筛选范围统计</div></article>
+    <article class="stat-card"><div class="stat-head">服务商费用 <span class="small-tag">USD</span><span class="stat-icon amber">$</span></div><div class="stat-value" id="billedCost">—</div><div class="stat-detail" id="billedDetail">仅有费用记录的调用</div><div class="stat-foot">上游返回 / 导入的已知费用</div></article>
+    <article class="stat-card"><div class="stat-head">本地估算费用 <span class="small-tag">USD</span><span class="stat-icon purple">≈</span></div><div class="stat-value" id="estimatedCost">—</div><div class="stat-detail" id="estimatedDetail">来自 agent 日志的价格估算</div><div class="stat-foot">用于比较消耗，不代表账单</div></article>
+  </section>
+  <section class="panel unit-panel" aria-label="Token 费用比">
+    <div><h2>Token 费用比</h2><p>同一批有金额与 Token 的记录 · 输入 + 输出 · USD / 百万 Token</p></div>
+    <div class="unit-stat"><span>服务商费用 / 1M Token</span><strong id="billedUnit">—</strong><small id="billedUnitNote"></small></div>
+    <div class="unit-stat"><span>本地估算 / 1M Token</span><strong id="estimatedUnit">—</strong><small id="estimatedUnitNote"></small></div>
+  </section>
+  <section class="panel trend-panel">
+    <div class="panel-heading"><div><h2>消耗趋势</h2><p id="trendSubtitle">每日汇总 · 本地时区</p></div><div class="chart-controls"><select id="metric" aria-label="图表指标"><option value="tokens">总 Token</option><option value="input_tokens">输入 Token</option><option value="output_tokens">输出 Token</option><option value="cached_tokens">缓存 Token</option><option value="requests">调用量</option><option value="cost">金额 · USD</option></select><select id="money" aria-label="费用类型"><option value="billed">服务商费用</option><option value="estimated">本地估算</option></select></div></div>
+    <div class="chart-legend"><span><i class="legend-dot primary-dot"></i><span id="metricLegend">总 Token</span></span><span id="chartTotal" class="chart-total"></span></div>
+    <div class="trend-container"><svg id="trendChart" viewBox="0 0 960 240" role="img" aria-label="每日用量趋势折线图"></svg><div id="chartTooltip" class="tooltip" hidden></div></div>
+    <div class="chart-caption"><span id="chartNote">将鼠标移到图表上查看当日用量</span><span id="dateLabel"></span></div>
+  </section>
+  <section class="breakdown-grid" id="breakdown">
+    <article class="panel"><div class="panel-heading"><div><h2>用量占比</h2><p>点击分组，进一步筛选</p></div><div class="dimension-switch" id="groupButtons"><button class="selected" data-group="agent">Agent</button><button data-group="model">模型</button><button data-group="provider">中转站</button></div></div><div class="donut-layout"><div class="donut-wrap"><svg id="mainDonut" viewBox="0 0 220 220" role="img" aria-label="用量占比环形图"></svg><div class="donut-center"><strong id="donutTotal">—</strong><span id="donutUnit">Token</span></div></div><div id="mainLegend" class="donut-legend"></div></div><div class="panel-footer" id="shareNote">占比随图表指标变化</div></article>
+    <article class="panel"><div class="panel-heading"><div><h2>中转站分布</h2><p>当前筛选下的 provider 构成</p></div><span class="small-tag">PROVIDERS</span></div><div class="donut-layout"><div class="donut-wrap"><svg id="providerDonut" viewBox="0 0 220 220" role="img" aria-label="中转站占比环形图"></svg><div class="donut-center"><strong id="providerCount">—</strong><span>个中转站 / Provider</span></div></div><div id="providerLegend" class="donut-legend"></div></div><div class="panel-footer">自定义 provider 名称可映射为 AIHub 等站点名称</div></article>
+  </section>
+  <section class="panel table-panel"><div class="panel-heading"><div><h2>分组明细</h2><p id="tableSubtitle">按 Agent 汇总</p></div><span id="groupCount" class="small-tag"></span></div><div class="table-scroll"><table><thead><tr><th id="dimensionLabel">AGENT</th><th>调用量</th><th>输入 TOKEN</th><th>输出 TOKEN</th><th>缓存 TOKEN</th><th>服务商 USD</th><th>估算 USD</th><th>费用 / 1M TOKEN*</th><th>占比</th></tr></thead><tbody id="groupTable"></tbody></table></div></section>
+  <details class="panel records-panel" id="records"><summary><span>最近调用记录</span><span class="records-hint">最多 50 条 · 展开查看 ↓</span></summary><div class="table-scroll"><table><thead><tr><th>时间</th><th>Agent</th><th>中转站</th><th>模型</th><th>TOKEN</th><th>服务商 USD</th><th>估算 USD</th><th>状态</th></tr></thead><tbody id="recentTable"></tbody></table></div></details>
+  <section class="panel connection-panel" id="connections"><div class="panel-heading"><div><h2>数据连接</h2><p>可在界面配置站点；已保存 key 不回显，余额独立于用量筛选</p></div><div class="connection-actions"><button id="configureSitesBtn" class="button primary">＋ 配置站点</button><button id="routerSyncBtn" class="button secondary">↻ 同步 OpenRouter</button></div></div><div class="connection-grid"><div class="connection-item"><span class="connection-logo">⌘</span><div><strong>本地 Agent</strong><p id="localConnection">pi · omp · codex</p></div><span class="connection-status" id="localState">就绪</span></div><div class="connection-item"><span class="connection-logo router">↗</span><div><strong>OpenRouter</strong><p id="routerConnection">等待配置环境变量</p></div><span class="connection-status" id="routerState">待接入</span></div><div class="connection-item"><span class="connection-logo hub">A</span><div><strong>AIHub / 其他中转站</strong><p>通过专用代理或本地 provider 日志接入</p></div><span class="connection-status muted">兼容代理</span></div></div><div id="balanceCards" class="balance-cards"></div><div id="snapshots" class="snapshot-list"></div></section>
+  <div id="qualityNotes" class="quality-note"></div>
+  <footer class="page-footer"><span>LLM METER <span class="footer-divider">/</span> 让消耗清晰可见</span><span id="updatedAt">等待数据</span></footer>
+</div>
+</main>
+<dialog id="settingsDialog" class="settings-dialog">
+  <div class="settings-heading"><div><h2>站点配置</h2><p>填写站点地址和 key，即可查询余额；保存后立即生效。</p></div><button id="closeSettingsBtn" class="close-button" aria-label="关闭配置">×</button></div>
+  <div id="settingsFeedback" class="feedback" role="status" hidden></div>
+  <div class="settings-layout"><div class="saved-sites"><div class="saved-heading">已配置站点<button id="newSiteBtn" class="text-button">＋ 新增</button></div><div id="savedSites"></div><p class="settings-note">凭证仅存服务端数据库旁的配置文件，权限 600；文件为明文，请保护该机器账号。演示模式配置退出即清理。</p></div>
+  <form id="siteForm" autocomplete="off"><input id="siteId" type="hidden">
+    <div class="site-form-grid">
+    <label>站点名称<input id="siteName" required maxlength="80" placeholder="例如 AIHub"></label>
+    <label>查询类型<select id="siteType"><option value="generic">通用中转站 · /v1/usage</option><option value="openrouter">OpenRouter · 专用接口</option></select></label>
+    <label>Provider ID<input id="siteProvider" required maxlength="80" placeholder="例如 aihub"></label>
+    <label>Base URL<input id="siteBase" type="url" placeholder="https://你的站点" required></label>
+    <label class="full-width">余额路径<input id="sitePath" value="/v1/usage" placeholder="/v1/usage"><small id="endpointPreview">GET 站点域名/v1/usage · Authorization: Bearer API key</small></label>
+    <label class="full-width">余额币种<select id="siteCurrency"><option value="auto">跟随接口（无单位时默认 USD）</option><option value="USD">美元 · USD</option><option value="CNY">人民币 · CNY / RMB</option></select><small>固定币种会覆盖接口单位，余额数值不变，不自动换汇。OpenRouter 固定为 USD。</small></label>
+    <label class="full-width">普通 API key<input id="siteKey" type="password" autocomplete="new-password" placeholder="首次填写 key；编辑时留空保留"><span class="key-clear"><input id="clearSiteKey" type="checkbox">清除已保存的普通 key</span></label>
+    <label class="full-width" id="managementField" hidden>管理 key（可选）<input id="siteManagementKey" type="password" autocomplete="new-password" placeholder="用于 OpenRouter 账户余额和历史"><span class="key-clear"><input id="clearManagementKey" type="checkbox">清除已保存的管理 key</span></label>
+    <label class="full-width">本地 provider 别名（可选）<input id="siteAliases" placeholder="例如 my-relay, custom-aihub"><small>逗号分隔；将这些日志 provider 名映射到上面的 Provider ID。</small></label>
+    </div>
+    <div id="queryRules" class="query-rules">余额：remaining → quota.remaining → balance<br>单位：unit → quota.unit → USD<br>有效：is_active → isValid → true</div>
+    <div class="form-actions"><button type="submit" id="saveSiteBtn" class="button secondary">保存配置</button><button type="button" id="saveQueryBtn" class="button primary">保存并查余额</button></div>
+  </form></div>
+</dialog>
+</body></html>
