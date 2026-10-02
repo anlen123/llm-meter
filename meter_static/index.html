@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="valley">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light"><title>LLM Meter · 用量观察台</title>
@@ -7,7 +7,7 @@
 </head>
 <body>
 <aside class="sidebar">
-  <a href="/" class="brand"><span class="brand-symbol">m<span>↗</span></span><span>meter<span class="brand-sub">LLM OBSERVATORY</span></span></a>
+  <a href="/" class="brand"><span class="brand-symbol">m<span>↗</span></span><span>meter<span class="brand-sub">THE USAGE CABIN</span></span></a>
   <div class="nav-label">工作空间</div>
   <a class="nav-link active" href="#overview"><span>◫</span> 用量总览 <span class="nav-dot"></span></a>
   <a class="nav-link" href="#breakdown"><span>◉</span> 维度分析</a>
@@ -17,9 +17,22 @@
   <div class="sidebar-foot">LLM METER <span>v0.4</span></div>
 </aside>
 <main>
-<header class="topbar"><div><span class="crumb">工作空间</span><span class="crumb-slash">/</span>用量总览</div><div class="topbar-right"><span id="modeBadge" class="badge">本地看板</span><span class="local-status"><i></i> 127.0.0.1</span></div></header>
+<header class="topbar"><div><span class="crumb">工作空间</span><span class="crumb-slash">/</span>用量总览</div><div class="topbar-right"><label class="theme-picker">风格 <select id="themeSelect" aria-label="界面风格"><option value="valley">田园 · 星露谷风</option><option value="summit">雪山 · 蔚蓝风</option></select></label><span id="modeBadge" class="badge">本地看板</span><span class="local-status"><i></i> 127.0.0.1</span></div></header>
 <div class="page" id="overview">
-  <div class="page-heading"><div><div class="eyebrow">YOUR AI, IN PERSPECTIVE</div><h1>用量观察台<span class="heading-dot">.</span></h1><p>让 agent、模型与每一笔消耗，一目了然。</p></div><div class="heading-actions"><button id="exportBtn" class="button secondary">↓ 导出 CSV</button><button id="syncBtn" class="button primary">↻ 同步本地</button></div></div>
+<section class="landscape" aria-label="像素风景装饰">
+<svg class="pixel-scene" viewBox="0 0 1000 180" preserveAspectRatio="xMidYMax slice" aria-hidden="true" shape-rendering="crispEdges">
+<rect width="1000" height="180" class="sky"/>
+<g class="valley-scene"><path fill="#fff0ba" d="M770 22h36v8h8v36h-8v8h-36v-8h-8V30h8z"/><path fill="#fff8df" d="M85 30h45v-8h45v8h25v16H85zM380 18h30v-8h38v8h38v17H380zM610 62h40v-9h26v9h24v14h-90z"/>
+<path fill="#83b2a0" d="M0 100h65V84h55V70h85v17h60v28h95V90h80V67h90v23h55v22h110V90h75V72h80v25h60v18h90v65H0z"/>
+<path fill="#629651" d="M0 135h95v-15h85v-18h110v20h90v17h130v-20h90v-18h125v22h95v16h100v-19h80v60H0z"/>
+<path fill="#86ad50" d="M0 153h1000v27H0z"/><path fill="#c59a57" d="M530 145h55v12h45v10h60v13H530z"/>
+<g fill="#365e38"><path d="M60 108h14V76h-14zM38 78h58V60H85V43H51v17H38zM899 110h12V73h-12zM878 77h57V57h-12V42h-33v15h-12z"/></g>
+<path fill="#b9603c" d="M193 102h85v46h-85z"/><path fill="#6c4437" d="M182 102V91h12V80h12V69h58v11h12v11h12v11z"/><path fill="#f5d08a" d="M206 111h15v15h-15zM250 111h15v15h-15z"/><path fill="#704732" d="M231 120h14v28h-14z"/>
+<g fill="#ffe38b"><path d="M355 155h5v5h-5zM729 160h5v5h-5zM803 148h5v5h-5z"/></g></g>
+<g class="summit-scene"><g fill="#dbe9ff"><path d="M90 30h4v4h-4zM250 18h4v4h-4zM670 28h4v4h-4zM920 42h4v4h-4zM550 53h4v4h-4z"/></g><path fill="#7787bb" d="M0 143h50v-20h30v-25h30V75h30V50h30v25h30v25h30v28h50v20h55v-30h30V85h30V60h30V30h30v30h30v30h30v25h40v32h70v-30h30V90h30V65h30V40h30v25h30v30h30v27h30v25h90v33H0z"/><path fill="#d7edf3" d="M110 75h30V50h30v25h30v25h-25V89h-35v13h-30zM365 85h30V60h30V30h30v30h30v30h-35V77h-35v17h-50zM695 65h30V40h30v25h30v30h-30V80h-30v17h-30z"/><path fill="#465680" d="M0 169h60v-20h55v-12h80v24h135v-24h70v-22h70v22h65v24h110v-17h70v-18h65v26h120v-15h70v43H0z"/><path fill="#b8dde7" d="M0 169h110v-7h85v7h135v-7h105v7h100v-7h110v7h135v-7h120v7h100v11H0z"/><path fill="#fa998a" d="M848 112h10v10h-10zM843 122h20v16h-20zM840 124h-22v6h22z"/></g>
+</svg><div class="landscape-caption"><span class="season-marker">✦</span><span id="sceneCaption">晴天 · 用量小屋</span><span class="scene-coordinate">LLM METER / LOCAL WORLD</span></div>
+</section>
+  <div class="page-heading"><div><div class="eyebrow">YOUR LITTLE USAGE WORLD</div><h1>用量观察台<span class="heading-dot">.</span></h1><p>让 agent、模型与每一笔消耗，一目了然。</p></div><div class="heading-actions"><button id="exportBtn" class="button secondary">↓ 导出 CSV</button><button id="syncBtn" class="button primary">↻ 同步本地</button></div></div>
   <div id="feedback" class="feedback" role="status" hidden></div>
   <section class="filter-panel" aria-label="统计筛选">
     <div class="filter-top"><span class="section-label">筛选视图</span><div class="date-controls"><div class="range-buttons" id="rangeButtons"><button data-days="7">7 天</button><button class="selected" data-days="14">14 天</button><button data-days="30">30 天</button></div><input type="date" id="startDate" aria-label="开始日期"><span class="date-dash">—</span><input type="date" id="endDate" aria-label="结束日期"></div></div>

@@ -1,6 +1,13 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const colors = ['#368a71','#88ae98','#ccb77e','#819cbd','#b498bb','#7ebbc0','#d49d83','#a4b6a0'];
+let colors = ['#368a71','#88ae98','#ccb77e','#819cbd','#b498bb','#7ebbc0','#d49d83','#a4b6a0'];
+function applyTheme(theme){
+ const summit=theme==='summit';document.documentElement.dataset.theme=summit?'summit':'valley';$('themeSelect').value=summit?'summit':'valley';
+ colors=summit?['#6289c4','#ca6a87','#749aaa','#a58dc1','#c99b59','#7380ac','#69a895','#b67753']:['#50804b','#c08a35','#669da8','#b96747','#9b7faa','#9da64e','#c08685','#648374'];
+ $('sceneCaption').textContent=summit?'晴空 · 雪山观测站':'晴天 · 用量小屋';
+ try{localStorage.setItem('llm-meter-theme',summit?'summit':'valley');}catch{}
+ if(current)render(current);
+}
 const names = {agent:'Agent',model:'模型',provider:'中转站',source:'来源'};
 const metricNames = {tokens:'总 Token',input_tokens:'输入 Token',output_tokens:'输出 Token',cached_tokens:'缓存 Token',requests:'调用量',cost:'金额'};
 let grouping='agent', current=null, serial=0, controller=null, initialized=false;
@@ -49,19 +56,19 @@ $('updatedAt').textContent='更新于 '+new Date(data.updated_at*1000).toLocaleT
 }
 function drawTrend(series){const svg=$('trendChart');const W=Math.max(320,svg.clientWidth||960),H=240;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);const L=66,R=20,T=18,B=37;const width=W-L-R,height=H-T-B;const max=Math.max(...series.map(r=>r.value),0);const top=max>0?max*1.15:1;
 const x=i=>L+i*width/Math.max(1,series.length-1),y=v=>T+height*(1-v/top);
-let markup='<defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4c987c" stop-opacity=".18"/><stop offset="100%" stop-color="#4c987c" stop-opacity=".01"/></linearGradient></defs>';
+let markup='<defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--chart)" stop-opacity=".18"/><stop offset="100%" stop-color="var(--chart)" stop-opacity=".01"/></linearGradient></defs>';
 for(let i=0;i<5;i++){const v=top*i/4,yy=y(v);markup+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" class="svg-grid"/><text x="${L-12}" y="${yy+3}" text-anchor="end" class="svg-label">${escaped($('metric').value==='cost'?'$'+v.toFixed(v<1?3:2):compact(v))}</text>`;}
 const path=series.map((r,i)=>(i?'L':'M')+x(i).toFixed(2)+','+y(r.value).toFixed(2)).join(' ');
-if(max>0){markup+=`<path d="${path} L${x(series.length-1)},${T+height} L${L},${T+height} Z" fill="url(#areaFill)"/><path d="${path}" fill="none" stroke="#3e8d72" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;}
+if(max>0){markup+=`<path d="${path} L${x(series.length-1)},${T+height} L${L},${T+height} Z" fill="url(#areaFill)"/><path d="${path}" fill="none" stroke="var(--chart)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;}
 else markup+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" class="svg-empty">${current.summary.records?'当前指标没有已知非零用量':'当前筛选暂无数据'}</text>`;
 const ticks=Math.min(W<600?4:6,series.length);const indices=new Set();for(let j=0;j<ticks;j++)indices.add(Math.round(j*(series.length-1)/Math.max(1,ticks-1)));for(const i of indices)markup+=`<text x="${x(i)}" y="${H-12}" class="svg-label" text-anchor="middle">${escaped(series[i].date.slice(5).replace('-','/'))}</text>`;
-markup+='<line id="hoverLine" x1="0" y1="18" x2="0" y2="203" stroke="#aac8b5" stroke-dasharray="4 4" visibility="hidden"/><circle id="hoverPoint" r="4" fill="#fff" stroke="#37876c" stroke-width="2" visibility="hidden"/>';
+markup+='<line id="hoverLine" x1="0" y1="18" x2="0" y2="203" stroke="var(--chart)" stroke-dasharray="4 4" visibility="hidden"/><circle id="hoverPoint" r="4" fill="#fff" stroke="var(--chart)" stroke-width="2" visibility="hidden"/>';
 svg.innerHTML=markup;
 svg.onpointermove=e=>{const rect=svg.getBoundingClientRect();const px=(e.clientX-rect.left)/rect.width*W;const i=Math.max(0,Math.min(series.length-1,Math.round((px-L)/width*(series.length-1))));const row=series[i];const line=$('hoverLine'),point=$('hoverPoint');line.setAttribute('x1',x(i));line.setAttribute('x2',x(i));line.setAttribute('visibility','visible');point.setAttribute('cx',x(i));point.setAttribute('cy',y(row.value));point.setAttribute('visibility','visible');const tip=$('chartTooltip');tip.textContent=row.date+' · '+metricFormat(row.value);tip.hidden=false;tip.style.left=Math.min(rect.width-150,Math.max(0,e.clientX-rect.left+10))+'px';tip.style.top='18px';};
 svg.onpointerleave=()=>{$('chartTooltip').hidden=true;$('hoverLine').setAttribute('visibility','hidden');$('hoverPoint').setAttribute('visibility','hidden');};
 }
 function drill(dimension,value){if(!['agent','provider','model','source'].includes(dimension))return;$(dimension).value=value;load();}
-function drawDonut(svgId,legendId,groups,dimension){const total=groups.reduce((a,r)=>a+r.value,0);const radius=79,circ=2*Math.PI*radius;let markup='<circle cx="110" cy="110" r="79" fill="none" stroke="#f0f4f0" stroke-width="24"/>';let offset=0;
+function drawDonut(svgId,legendId,groups,dimension){const total=groups.reduce((a,r)=>a+r.value,0);const radius=79,circ=2*Math.PI*radius;let markup='<circle cx="110" cy="110" r="79" fill="none" stroke="var(--track)" stroke-width="24"/>';let offset=0;
 const visible=groups.slice(0,7).map(r=>({...r}));if(groups.length>7)visible.push({name:'其他（'+(groups.length-7)+' 个）',value:groups.slice(7).reduce((a,r)=>a+r.value,0),other:true});
 for(let i=0;i<visible.length;i++){const g=visible[i];const fraction=total?g.value/total:0;const length=Math.max(0,circ*fraction-3);if(length>0){markup+=`<circle class="donut-segment" data-index="${i}" cx="110" cy="110" r="79" fill="none" stroke="${colors[i%colors.length]}" stroke-width="24" stroke-dasharray="${length} ${circ-length}" stroke-dashoffset="${-offset}" transform="rotate(-90 110 110)"><title>${escaped(label(g.name))} · ${(fraction*100).toFixed(1)}% · ${escaped(metricFormat(g.value))}</title></circle>`;}offset+=circ*fraction;}
 $(svgId).innerHTML=markup;$(legendId).replaceChildren();
@@ -136,3 +143,6 @@ async function deleteSite(item){if(!confirm('删除 '+item.name+' 的站点配�
 $('configureSitesBtn').onclick=async()=>{await loadSites();if(siteConfigs.length)editSite(siteConfigs[0]);else newSite();$('settingsDialog').showModal();};$('closeSettingsBtn').onclick=()=>$('settingsDialog').close();$('newSiteBtn').onclick=newSite;
 $('siteType').onchange=()=>{if($('siteType').value==='deepseek'){$('siteBase').value='https://api.deepseek.com';$('sitePath').value='/user/balance';$('siteProvider').value='deepseek';$('siteCurrency').value='auto';}if($('siteType').value==='generic'){$('siteBase').value='';$('sitePath').value='/v1/usage';}updateSiteType();};$('siteBase').oninput=updateSiteType;$('sitePath').oninput=updateSiteType;$('siteCurrency').onchange=updateSiteType;
 $('siteForm').onsubmit=e=>{e.preventDefault();saveSite();};$('saveQueryBtn').onclick=()=>saveSite(true);
+
+$('themeSelect').onchange=()=>applyTheme($('themeSelect').value);
+let initialTheme='valley';try{initialTheme=localStorage.getItem('llm-meter-theme')||'valley';}catch{}applyTheme(initialTheme);
