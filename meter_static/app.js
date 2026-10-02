@@ -123,6 +123,7 @@ function settingsMessage(message,error=false){$('settingsFeedback').hidden=!mess
 async function siteRequest(path,body){const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Meter-Request':'1'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw new Error(data.error||'站点操作失败');return data;}
 async function loadSites(){try{const response=await fetch('/api/connections');const data=await response.json();if(!response.ok)throw new Error(data.error||'配置读取失败');siteConfigs=data.connections;renderSites();}catch(error){if($('settingsDialog').open)settingsMessage(error.message,true);}}
 function renderSites(){
+$('balanceEmpty').hidden=siteConfigs.length>0;
 $('savedSites').replaceChildren();$('balanceCards').replaceChildren();
 if(!siteConfigs.length){const empty=document.createElement('p');empty.className='settings-note';empty.textContent='还没有站点。右侧填写名称、地址和 key 后保存。';$('savedSites').append(empty);}
 for(const item of siteConfigs){

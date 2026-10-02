@@ -12,6 +12,7 @@
   <a class="nav-link active" href="#overview"><span>◫</span> 用量总览 <span class="nav-dot"></span></a>
   <a class="nav-link" href="#breakdown"><span>◉</span> 维度分析</a>
   <a class="nav-link" href="#records"><span>≡</span> 调用记录</a>
+  <a class="nav-link" href="#balances"><span>▤</span> 账户余额</a>
   <a class="nav-link" href="#connections"><span>⇄</span> 数据连接</a>
   <div class="sidebar-note"><span class="little-dot"></span> 本地数据优先<p>每一次调用，都有迹可循。</p><div class="agent-pills"><span>pi</span><span>omp</span><span>codex</span></div></div>
   <div class="sidebar-foot">LLM METER <span>v0.4</span></div>
@@ -37,6 +38,11 @@
     <div class="quota-heading"><div><span class="quota-eyebrow">CODEX · ACCOUNT QUOTA</span><h2>Codex 剩余额度</h2><p id="codexQuotaStatus">尚未查询 · 点击右侧按钮获取当前额度</p></div><button id="codexLimitsBtn" class="button primary">↻ 查询实时额度</button></div>
     <div id="codexQuotaCards" class="quota-cards" aria-live="polite"></div>
     <div class="quota-foot">账户额度独立于用量筛选 · 查询使用此机器的 Codex 登录 · 中转站金额请查看站点余额</div>
+  </section>
+  <section class="panel balance-dashboard" id="balances" aria-label="站点余额">
+    <div class="panel-heading"><div><h2>站点余额</h2><p>OpenRouter · DeepSeek · AIHub / 其他中转站 · 各站点按自己的币种显示</p></div><button id="configureSitesBtn" class="button primary">管理站点</button></div>
+    <p id="balanceEmpty" class="balance-empty">尚未配置站点，点击「管理站点」添加地址和密钥，即可查询余额。</p>
+    <div id="balanceCards" class="balance-cards"></div>
   </section>
   <div id="feedback" class="feedback" role="status" hidden></div>
   <section class="filter-panel" aria-label="统计筛选">
@@ -74,7 +80,7 @@
   </section>
   <section class="panel table-panel"><div class="panel-heading"><div><h2>分组明细</h2><p id="tableSubtitle">按 Agent 汇总</p></div><span id="groupCount" class="small-tag"></span></div><div class="table-scroll"><table><thead><tr><th id="dimensionLabel">AGENT</th><th>调用量</th><th>输入 TOKEN</th><th>输出 TOKEN</th><th>缓存 TOKEN</th><th>服务商 USD</th><th>估算 USD</th><th>费用 / 1M TOKEN*</th><th>占比</th></tr></thead><tbody id="groupTable"></tbody></table></div></section>
   <details class="panel records-panel" id="records"><summary><span>最近调用记录</span><span class="records-hint">最多 50 条 · 展开查看 ↓</span></summary><div class="table-scroll"><table><thead><tr><th>时间</th><th>Agent</th><th>中转站</th><th>模型</th><th>TOKEN</th><th>服务商 USD</th><th>估算 USD</th><th>状态</th></tr></thead><tbody id="recentTable"></tbody></table></div></details>
-  <section class="panel connection-panel" id="connections"><div class="panel-heading"><div><h2>数据连接</h2><p>可在界面配置站点；已保存 key 不回显，余额独立于用量筛选</p></div><div class="connection-actions"><button id="configureSitesBtn" class="button primary">管理站点</button><button id="routerSyncBtn" class="button secondary">↻ 同步 OpenRouter</button></div></div><div class="connection-grid"><div class="connection-item"><span class="connection-logo">⌘</span><div><strong>本地 Agent</strong><p id="localConnection">pi · omp · codex</p></div><span class="connection-status" id="localState">就绪</span></div><div class="connection-item"><span class="connection-logo router">↗</span><div><strong>OpenRouter</strong><p id="routerConnection">等待配置环境变量</p></div><span class="connection-status" id="routerState">待接入</span></div><div class="connection-item"><span class="connection-logo hub">A</span><div><strong>AIHub / 其他中转站</strong><p>通过专用代理或本地 provider 日志接入</p></div><span class="connection-status muted">兼容代理</span></div></div><div id="balanceCards" class="balance-cards"></div><div id="snapshots" class="snapshot-list"></div></section>
+  <section class="panel connection-panel" id="connections"><div class="panel-heading"><div><h2>数据连接</h2><p>可在界面配置站点；已保存 key 不回显，余额独立于用量筛选</p></div><div class="connection-actions"><button id="routerSyncBtn" class="button secondary">↻ 同步 OpenRouter</button></div></div><div class="connection-grid"><div class="connection-item"><span class="connection-logo">⌘</span><div><strong>本地 Agent</strong><p id="localConnection">pi · omp · codex</p></div><span class="connection-status" id="localState">就绪</span></div><div class="connection-item"><span class="connection-logo router">↗</span><div><strong>OpenRouter</strong><p id="routerConnection">等待配置环境变量</p></div><span class="connection-status" id="routerState">待接入</span></div><div class="connection-item"><span class="connection-logo hub">A</span><div><strong>AIHub / 其他中转站</strong><p>通过专用代理或本地 provider 日志接入</p></div><span class="connection-status muted">兼容代理</span></div></div><div id="snapshots" class="snapshot-list"></div></section>
   <div id="qualityNotes" class="quality-note"></div>
   <footer class="page-footer"><span>LLM METER <span class="footer-divider">/</span> 让消耗清晰可见</span><span id="updatedAt">等待数据</span></footer>
 </div>
